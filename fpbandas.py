@@ -2,7 +2,7 @@ import numpy as np
 from scipy.signal import cheby2
 
 # Generar coeficientes Pasa Bandas
-def generar_coeficientes_pasabandas(fc1, fc2, fs, orden=4, atenuacion=40):
+def generar_coeficientes_pasabandas(fc1, fc2, fs, orden=2, atenuacion=40):
     b, a = cheby2(N=orden, rs=atenuacion, Wn=[fc1/(fs/2), fc2/(fs/2)], btype='bandpass')
     return b, a
 
