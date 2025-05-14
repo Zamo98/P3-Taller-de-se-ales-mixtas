@@ -5,7 +5,6 @@ import sounddevice as sd
 import numpy as np
 import threading
 
-# Importar funciones para cada tipo de filtro
 from fpb import generar_coeficientes_pasabajas, aplicar_filtro_iir as aplicar_fpb
 from fpa import generar_coeficientes_pasaaltas
 from fpbandas import generar_coeficientes_pasabandas
@@ -15,36 +14,61 @@ class FiltroApp:
     def __init__(self, root):
         self.root = root
         self.root.title("Filtro de Audio en Tiempo Real")
+        self.root.configure(bg="#000000")
 
-        self.file_label = tk.Label(root, text="Archivo: Ninguno")
-        self.file_label.pack()
+        # === Estilos ttk ===
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("TButton", foreground="white", background="#3CD31A", font=("Segoe UI", 10), padding=6)
+        style.configure("TLabel", foreground="white", background="#000000", font=("Segoe UI", 10))
+        style.configure("TCombobox", padding=4)
 
-        self.status_label = tk.Label(root, text="", fg="blue")
+        # === Información del archivo ===
+        self.file_label = ttk.Label(root, text="Archivo: Ninguno")
+        self.file_label.pack(pady=(10, 5))
+
+        self.status_label = ttk.Label(root, text="")
         self.status_label.pack()
 
-        self.load_button = tk.Button(root, text="Cargar archivo", command=self.load_file)
-        self.load_button.pack()
+        # === Controles ===
+        controls_frame = ttk.Frame(root)
+        controls_frame.pack(pady=10)
 
-        self.play_button = tk.Button(root, text="Reproducir con filtro", command=self.play_filtered, state=tk.DISABLED)
-        self.play_button.pack()
+        self.load_button = ttk.Button(controls_frame, text="Cargar archivo", command=self.load_file)
+        self.load_button.grid(row=0, column=0, padx=5)
 
-        self.stop_button = tk.Button(root, text="Detener reproducción", command=self.detener_reproduccion)
-        self.stop_button.pack()
+        self.play_button = ttk.Button(controls_frame, text="Reproducir con filtro", command=self.play_filtered, state=tk.DISABLED)
+        self.play_button.grid(row=0, column=1, padx=5)
 
+        self.stop_button = ttk.Button(controls_frame, text="Detener reproducción", command=self.detener_reproduccion)
+        self.stop_button.grid(row=0, column=2, padx=5)
+
+        # === Selector de filtro ===
+        selector_frame = ttk.Frame(root)
+        selector_frame.pack(pady=(5, 10))
+
+        ttk.Label(selector_frame, text="Tipo de filtro:").grid(row=0, column=0, sticky='w', padx=5)
         self.filter_type_var = tk.StringVar(value="Pasa baja")
-        self.filter_selector = ttk.Combobox(root, textvariable=self.filter_type_var,
-                                            values=["Pasa baja configurable", "Pasa baja", "Pasa alta", "Pasa banda", "Suprime banda"]
-                                           , state="readonly")
-        self.filter_selector.pack()
+        self.filter_selector = ttk.Combobox(selector_frame, textvariable=self.filter_type_var,
+                                            values=["Pasa baja configurable", "Pasa baja", "Pasa alta", "Pasa banda", "Suprime banda"],
+                                            state="readonly", width=25)
+        self.filter_selector.grid(row=0, column=1, padx=5)
         self.filter_selector.bind("<<ComboboxSelected>>", lambda e: self.on_filter_change())
 
-        self.f1_container = tk.Frame(root)
+        # === Control de frecuencia de corte ===
+        self.f1_container = ttk.Frame(root)
         self.f1 = tk.Scale(self.f1_container, from_=100, to=10000, resolution=100, orient=tk.HORIZONTAL,
-                           label="Frecuencia de corte (Hz)")
+                           label="Frecuencia de corte (Hz)", bg="#000000", fg="white", troughcolor="#3CD31A",
+                           highlightthickness=0)
         self.f1.set(4000)
         self.f1.pack()
         self.f1.bind("<ButtonRelease-1>", lambda e: self.update_filter())
 
+        # === Visualización de coeficientes ===
+        self.coef_label = tk.Label(root, text="Coeficientes: Ninguno", bg="#000000", fg="white", justify=tk.LEFT, font=("Consolas", 9))
+        self.coef_label.pack(pady=(5, 10))
+
+        # === Inicialización ===
         self.data = None
         self.samplerate = None
         self.index = 0
@@ -100,12 +124,15 @@ class FiltroApp:
             self.y_hist = np.zeros(len(b))
             self.index = 0
             filtro = self.filter_type_var.get()
+
+            coef_text = f"Coeficientes (b): {np.round(b, 4)}\nCoeficientes (a): {np.round(a, 4)}"
+            self.coef_label.config(text=coef_text)
             self.status_label.config(text=f"{filtro} actualizado")
 
     def on_filter_change(self):
         filtro = self.filter_type_var.get()
         if filtro == "Pasa baja configurable":
-            self.f1_container.pack()
+            self.f1_container.pack(pady=(0, 10))
         else:
             self.f1_container.pack_forget()
         self.update_filter()

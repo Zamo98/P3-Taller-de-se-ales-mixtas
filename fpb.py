@@ -36,8 +36,6 @@ def aplicar_filtro_iir(data, b, a, zi=None):
     return salida, y_hist.copy()
 '''
 
-import numpy as np
-
 def aplicar_filtro_iir(data, b, a, x_hist, y_hist):
     N = len(b)
     salida = np.zeros_like(data)
